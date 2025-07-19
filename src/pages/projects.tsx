@@ -1,58 +1,61 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useColorMode } from '@docusaurus/theme-common';
 import Translate, { translate } from '@docusaurus/Translate';
 import Layout from '@theme/Layout';
 import styles from './projects.module.css';
 import InfoCardList, { InfoCardProps } from '../components/InfoCard';
+import { ProjectCategory, ProjectCategoryLabels } from '../components/ProjectCategory';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import projects from '../data/projects';
 
-const projects: InfoCardProps[] = [
-  {
-    title: 'th1520-linux-kernel',
-    title_en: 'th1520-linux-kernel',
-    logo: '/img/github-mark.svg',
-    subtitle: 'th1520-linux-kernel',
-    subtitle_en: 'th1520-linux-kernel',
-    description: 'TH1520 的 Linux kernel',
-    description_en: 'Linux kernel for TH1520',
-    link: 'https://github.com/revyos/th1520-linux-kernel'
-  },
-  {
-    title: 'th1520-boot-firmware',
-    title_en: 'th1520-boot-firmware',
-    logo: '/img/github-mark.svg',
-    subtitle: 'th1520-boot-firmware',
-    subtitle_en: 'th1520-boot-firmware',
-    description: 'TH1520 的 boot firmware',
-    description_en: 'Boot firmware kernel for TH1520',
-    link: 'https://github.com/revyos/th1520-boot-firmware'
-  },
-];
+const Intro = () => (
+  <div className={styles.intro}>
+    <h1 className={styles.introTitle}>
+      <Translate>RevyOS 项目列表</Translate>
+    </h1>
+  </div>
+);
 
 const ProjectsInner: React.FC = () => {
-  const [dark, setDark] = useState(false);
   const { colorMode } = useColorMode();
-  useEffect(() => {
-    setDark(colorMode === 'dark');
-  }, [[]])
+  const dark = colorMode === 'dark';
+  const { i18n: { currentLocale } } = useDocusaurusContext();
+  const isEn = currentLocale === 'en';
+
+  // Group projects by category
+  const grouped = useMemo(() => {
+    return projects.reduce((acc, item) => {
+      const cat = item.category;
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(item);
+      return acc;
+    }, {} as Record<string, typeof projects>);
+  }, [projects]);
 
   return (
-    <div
-      className={styles.container}
-      style={{
-        backgroundColor: dark ? '#1a1a1a' : '#f9f9f9',
-        color: dark ? '#fff' : '#333',
-        padding: '40px 20px',
-      }}
-    >
-      <h1 style={{ textAlign: 'center', fontSize: '3rem', marginBottom: 'px' }}>
-        <Translate>RevyOS 项目列表</Translate>
-      </h1>
-      <div className={styles.cardListContainer}>
-        <InfoCardList items={projects} />
-      </div>
+    <div className={styles.container}>
+      <Intro />
+      {Object.entries(grouped).map(([cat, items]) => {
+        const labelObj = Object.prototype.hasOwnProperty.call(ProjectCategoryLabels, cat)
+          ? ProjectCategoryLabels[cat as keyof typeof ProjectCategoryLabels]
+          : null;
+        const categoryLabel = labelObj
+          ? (isEn ? labelObj.en : labelObj.zh)
+          : (isEn ? "Unknown Category" : "未知分类");
+        return (
+          <div key={cat} className={styles.categorySection}>
+            <h2 className={styles.categoryTitle}>
+              {categoryLabel}
+            </h2>
+            <div className={styles.cardListContainer}>
+              <InfoCardList items={items} />
+            </div>
+          </div>
+        );
+      })}
     </div>
-  )
-}
+  );
+};
 
 const ProjectsPage: React.FC = () => {
   return (
